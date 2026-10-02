@@ -47,7 +47,7 @@ class FaceDetectorEngine:
         self._mp = None
         self._last_timestamp_ms = -1
 
-    def __enter__(self) -> "FaceDetectorEngine":
+    def __enter__(self) -> FaceDetectorEngine:
         self.open()
         return self
 

@@ -11,8 +11,7 @@ import cv2
 from facedetected.analytics.face_analytics import FaceAnalytics
 from facedetected.analytics.head_pose import format_pose
 from facedetected.config import HudConfig, OverlayConfig, SnapshotConfig
-from facedetected.engine import DetectionResult, FaceLandmarkerEngine
-from facedetected.engine.results import Face
+from facedetected.engine import FaceLandmarkerEngine
 from facedetected.io_sources.base import Frame, FrameSource
 from facedetected.overlays.draw import draw_result
 from facedetected.overlays.hud import Hud

@@ -22,7 +22,6 @@ from facedetected.config import (
 from facedetected.engine import FaceDetectorEngine, FaceLandmarkerEngine
 from facedetected.io_sources import CameraSource, ImageSource, VideoFileSource
 from facedetected.logging_setup import setup_logging
-from facedetected.models import manager as model_manager
 from facedetected.overlays.draw import draw_result
 
 logger = logging.getLogger(__name__)

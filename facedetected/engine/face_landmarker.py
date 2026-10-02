@@ -58,7 +58,7 @@ class FaceLandmarkerEngine:
 
     # -- lifecycle -----------------------------------------------------------
 
-    def __enter__(self) -> "FaceLandmarkerEngine":
+    def __enter__(self) -> FaceLandmarkerEngine:
         self.open()
         return self
 

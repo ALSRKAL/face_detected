@@ -32,7 +32,7 @@ class FrameSource(ABC):
     def is_open(self) -> bool:
         return self._open
 
-    def __enter__(self) -> "FrameSource":
+    def __enter__(self) -> FrameSource:
         self.open()
         return self
 

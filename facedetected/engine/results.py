@@ -54,7 +54,7 @@ class FaceBox:
     def area(self) -> int:
         return self.w * self.h
 
-    def clipped_to(self, width: int, height: int) -> "FaceBox":
+    def clipped_to(self, width: int, height: int) -> FaceBox:
         x0 = max(0, min(self.x, width - 1))
         y0 = max(0, min(self.y, height - 1))
         x1 = max(x0 + 1, min(self.x2, width))

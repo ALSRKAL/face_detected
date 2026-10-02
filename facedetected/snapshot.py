@@ -36,7 +36,7 @@ class SnapshotManager:
             counter += 1
 
         if not cv2.imwrite(str(path), img):
-            raise IOError(f"failed to write snapshot: {path}")
+            raise OSError(f"failed to write snapshot: {path}")
         self.saved_count += 1
         logger.info("snapshot saved: %s", path)
         return path
