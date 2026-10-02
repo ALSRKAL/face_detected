@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from http.client import HTTPConnection
 
 import numpy as np
@@ -58,6 +59,19 @@ class TestMJPEGServer:
         server, host, port = server
         conn, response = _get(host, port, "/nope")
         assert response.status == 404
+        conn.close()
+
+    def test_stats_endpoint(self, server):
+        server, host, port = server
+        conn, response = _get(host, port, "/stats.json")
+        assert response.status == 200
+        assert response.headers["Content-Type"] == "application/json"
+        assert json.loads(response.read()) == {}
+        conn.close()
+
+        server.update_stats({"fps": "29.8", "blinks": 3})
+        conn, response = _get(host, port, "/stats.json")
+        assert json.loads(response.read()) == {"fps": "29.8", "blinks": 3}
         conn.close()
 
     def test_update_before_start_is_harmless(self):

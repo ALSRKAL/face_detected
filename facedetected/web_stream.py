@@ -1,13 +1,18 @@
-"""MJPEG web preview: watch the annotated stream from any browser.
+"""MJPEG web preview: watch the annotated stream and live stats in a browser.
 
-Serves a tiny self-contained page plus a multipart MJPEG stream on a local
-HTTP port.  Designed for the headless mode (servers, CI — or Wayland setups
-where OpenCV's highgui window is unavailable).  Binds to the loopback
-interface by default so the stream is never exposed to the network.
+Serves a tiny self-contained dashboard on a local HTTP port:
+  ``/``           — viewer page (stream image + live stats panel)
+  ``/stream.mjpg`` — multipart MJPEG of the annotated frames
+  ``/stats.json``  — JSON snapshot of the per-frame analytics
+
+Designed for the headless mode (servers, CI — or Wayland setups where
+OpenCV's highgui window is unavailable).  Binds to the loopback interface
+by default so the stream is never exposed to the network.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,29 +28,51 @@ _PAGE = """<!doctype html>
 <meta charset="utf-8">
 <title>facedetected live</title>
 <style>
-  body {{ background:#141210; color:#e8e4de; font-family: system-ui, sans-serif;
-         margin:0; display:flex; flex-direction:column; align-items:center; }}
-  h1 {{ font-size:1.1rem; font-weight:600; margin:14px 0 6px; }}
-  img {{ max-width:96vw; max-height:82vh; border-radius:10px;
-        border:1px solid #3a352f; background:#000; }}
-  .stats {{ font-size:.9rem; color:#b5aa9c; margin:8px 0 14px; }}
+  body { background:#141210; color:#e8e4de; font-family: system-ui, sans-serif;
+         margin:0; display:flex; flex-direction:column; align-items:center; }
+  h1 { font-size:1.1rem; font-weight:600; margin:14px 0 8px; }
+  img { max-width:96vw; max-height:70vh; border-radius:10px;
+        border:1px solid #3a352f; background:#000; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+          gap:8px; width:min(94vw,860px); margin:12px 0 20px; }
+  .card { background:#201c18; border:1px solid #3a352f; border-radius:9px;
+          padding:9px 12px; }
+  .k { color:#8f8578; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; }
+  .v { font-size:1.05rem; margin-top:3px; }
 </style>
 </head>
 <body>
-  <h1>facedetected — live stream</h1>
+  <h1>facedetected — live dashboard</h1>
   <img src="/stream.mjpg" alt="annotated stream">
-  <div class="stats">annotated output of the analysis loop</div>
+  <div class="grid" id="stats"></div>
+<script>
+async function poll() {
+  try {
+    const r = await fetch('/stats.json');
+    const s = await r.json();
+    const grid = document.getElementById('stats');
+    grid.innerHTML = Object.entries(s).map(([k, v]) =>
+      `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`
+    ).join('');
+  } catch (e) { /* server restarting; try again */ }
+  setTimeout(poll, 400);
+}
+poll();
+</script>
 </body>
 </html>"""
 
 
 class MJPEGServer:
-    """Threaded HTTP server streaming the latest annotated frame as MJPEG.
+    """Threaded HTTP server streaming the annotated frames plus live stats.
 
     Usage:
         server = MJPEGServer(("127.0.0.1", 8000))
         server.start()
-        ...  # call server.update_bgr(frame) once per analysis frame
+        ...  # per analysis frame:
+        server.update_bgr(frame)        # annotated image
+        server.update_stats({"FPS": "28.4", "Blinks": 3})
+        ...
         server.stop()
     """
 
@@ -53,12 +80,13 @@ class MJPEGServer:
         self.bind = bind
         self._condition = threading.Condition()
         self._jpeg: bytes | None = None
+        self._stats: dict | None = None
         self._frame_seq = 0
         self._frames_sent = 0
         self._httpd: ThreadingHTTPServer | None = None
         self._thread: threading.Thread | None = None
 
-    # -- frame supply --------------------------------------------------------
+    # -- frame / stats supply -------------------------------------------------
 
     def update_bgr(self, frame_bgr: np.ndarray) -> None:
         """Encode one BGR frame and publish it to connected viewers."""
@@ -72,7 +100,12 @@ class MJPEGServer:
             self._frame_seq += 1
             self._condition.notify_all()
 
-    # -- lifecycle -----------------------------------------------------------
+    def update_stats(self, stats: dict) -> None:
+        """Publish the per-frame stats snapshot served at ``/stats.json``."""
+        with self._condition:
+            self._stats = dict(stats)
+
+    # -- lifecycle -------------------------------------------------------------
 
     def start(self) -> tuple[str, int]:
         """Bind and serve in a daemon thread; returns the actual (host, port)."""
@@ -105,7 +138,7 @@ class MJPEGServer:
     def frames_sent(self) -> int:
         return self._frames_sent
 
-    # -- request handling ----------------------------------------------------
+    # -- request handling -------------------------------------------------------
 
     def _make_handler(self):
         server = self
@@ -117,6 +150,8 @@ class MJPEGServer:
                     self._serve_page()
                 elif self.path == "/stream.mjpg":
                     self._serve_stream()
+                elif self.path == "/stats.json":
+                    self._serve_stats()
                 else:
                     self.send_error(404)
 
@@ -124,6 +159,16 @@ class MJPEGServer:
                 body = _PAGE.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def _serve_stats(self) -> None:
+                with server._condition:
+                    payload = json.dumps(server._stats or {})
+                body = payload.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

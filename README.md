@@ -54,6 +54,9 @@ facedetected run --headless --web              # watch in the browser:
                                                # http://127.0.0.1:8000
 ```
 
+The browser dashboard shows the annotated stream **plus a live stats panel**
+(FPS, faces, blinks, mouth, head pose, EAR/MAR) refreshed from `/stats.json`.
+
 ### Still images
 
 ```bash

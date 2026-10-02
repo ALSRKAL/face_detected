@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import cv2
 
-from facedetected.analytics.face_analytics import FaceAnalytics
+from facedetected.analytics.face_analytics import FaceAnalytics, FaceStats
 from facedetected.analytics.head_pose import format_pose
 from facedetected.config import HudConfig, OverlayConfig, SnapshotConfig
 from facedetected.engine import FaceLandmarkerEngine
@@ -145,6 +145,7 @@ class FaceAnalysisApp:
         blink_count = None
         mouth_open = None
         head_pose = None
+        stats: FaceStats | None = None
 
         if self.analytics is not None:
             self.analytics.update(result)
@@ -159,9 +160,6 @@ class FaceAnalysisApp:
             h, w = frame.image.shape[:2]
             self.recorder.start(self._source_fps, (w, h))
 
-        if self.web is not None:
-            self.web.update_bgr(frame.image)
-
         fps = fps_meter.tick()
         self.hud.update(
             fps=fps,
@@ -173,9 +171,29 @@ class FaceAnalysisApp:
         self.hud.draw(frame.image, recording=self.recorder.is_recording)
         self.hud.draw_help_footer(frame.image)
 
+        if self.web is not None:
+            # publish after the HUD is drawn so browsers see the overlay too
+            self.web.update_bgr(frame.image)
+            self.web.update_stats(self._stats_payload(fps, result.face_count, stats))
+
         if self.recorder.is_recording:
             self.recorder.write(frame.image)
         return result.face_count, blinks_this_frame
+
+    def _stats_payload(self, fps: float, face_count: int, stats: FaceStats | None) -> dict:
+        """Snapshot served at /stats.json and rendered by the web dashboard."""
+        payload: dict = {
+            "fps": f"{fps:.1f}",
+            "faces": face_count,
+            "blinks": stats.blink_count if stats else 0,
+            "mouth": ("open" if stats.mouth_open else "closed") if stats else "—",
+            "pose": format_pose(stats.pose) if stats and stats.pose else "—",
+        }
+        if stats and stats.ear is not None:
+            payload["ear"] = f"{stats.ear:.3f}"
+        if stats and stats.mar is not None:
+            payload["mar"] = f"{stats.mar:.3f}"
+        return payload
 
     def _handle_key(self, key: int, frame: Frame) -> bool:
         """Returns False when the loop should stop."""
