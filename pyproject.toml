@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "facedetected"
+version = "2.0.0"
+description = "Professional real-time face analysis toolkit: 478-point face mesh, blink & mouth detection, head pose, snapshots and recording — built on MediaPipe Tasks + OpenCV."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "ALSRKAL" }]
+keywords = [
+    "face-detection",
+    "face-mesh",
+    "mediapipe",
+    "opencv",
+    "computer-vision",
+    "blink-detection",
+    "head-pose",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video :: Capture",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+dependencies = [
+    "mediapipe>=1.0.0",
+    "opencv-python>=4.8.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+facedetected = "facedetected.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ALSRKAL/face_detected"
+Repository = "https://github.com/ALSRKAL/face_detected"
+Changelog = "https://github.com/ALSRKAL/face_detected/blob/master/CHANGELOG.md"
+Issues = "https://github.com/ALSRKAL/face_detected/issues"
+
+[tool.setuptools.packages.find]
+include = ["facedetected*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that require model downloads or real media files",
+]
