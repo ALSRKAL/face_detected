@@ -3,6 +3,16 @@
 All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.1.0] - 2026-10-03
+
+### Added
+- **Browser live preview** (`--web [HOST:PORT]`): MJPEG streaming of the
+  annotated frames to any browser, loopback-bound by default — works in
+  headless mode (servers, CI, Wayland setups without a highgui window).
+- **Live stats dashboard**: the web page renders FPS / faces / blinks /
+  mouth / head pose / EAR / MAR as cards refreshed from a new
+  `/stats.json` endpoint every 400 ms; streamed frames include the HUD.
+
 ## [2.0.0] - 2026-10-03
 
 Complete rewrite of the original single-file script into a professional,

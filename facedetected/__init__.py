@@ -5,7 +5,7 @@ Built on MediaPipe Tasks (FaceLandmarker / FaceDetector) and OpenCV.
 
 from facedetected.config import DetectorConfig, HudConfig, OverlayConfig, SourceConfig
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
     "DetectorConfig",
