@@ -53,6 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--iris", action="store_true", help="highlight the iris rings")
     run_p.add_argument("--ids", action="store_true", help="draw numeric landmark ids (debug)")
     run_p.add_argument("--no-hud", action="store_true", help="hide the stats panel")
+    run_p.add_argument("--no-analytics", action="store_true", help="disable blink/mouth/pose analytics")
     run_p.add_argument("--record", action="store_true", help="start recording immediately")
     run_p.add_argument("--loop", action="store_true", help="loop video files forever")
     run_p.add_argument("--out-dir", default="outputs", help="snapshot/recording directory")
@@ -121,6 +122,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         headless=args.headless,
         max_frames=args.max_frames or None,
         auto_record=args.record,
+        enable_analytics=not args.no_analytics,
     )
     summary = app.run()
     print(summary.as_text())
