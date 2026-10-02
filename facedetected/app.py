@@ -18,6 +18,7 @@ from facedetected.overlays.hud import Hud
 from facedetected.recording import Recorder
 from facedetected.snapshot import SnapshotManager
 from facedetected.utils.fps import FPSMeter
+from facedetected.web_stream import MJPEGServer
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ class FaceAnalysisApp:
         max_frames: int | None = None,
         auto_record: bool = False,
         enable_analytics: bool = True,
+        web: tuple[str, int] | None = None,
     ) -> None:
         self.source = source
         self.engine = engine
@@ -76,6 +78,7 @@ class FaceAnalysisApp:
         self.snapshots = SnapshotManager(snapshot_cfg or SnapshotConfig())
         self.recorder = Recorder(snapshot_cfg or SnapshotConfig())
         self.analytics = FaceAnalytics() if enable_analytics else None
+        self.web = MJPEGServer(web) if web else None
         self.headless = headless
         self.max_frames = max_frames
         self.auto_record = auto_record
@@ -93,6 +96,9 @@ class FaceAnalysisApp:
 
         with self.source, self.engine:
             self._source_fps = getattr(self.source, "fps", 30.0) or 30.0
+            if self.web is not None:
+                host, port = self.web.start()
+                logger.info("watch in your browser: http://%s:%s", host, port)
             while self.max_frames is None or frames < self.max_frames:
                 frame = self.source.read()
                 if frame is None:
@@ -111,6 +117,8 @@ class FaceAnalysisApp:
 
         elapsed = max(time.monotonic() - started, 1e-6)
         recording_path = self.recorder.stop()  # no-op when never started
+        if self.web is not None:
+            self.web.stop()
         if not self.headless:
             cv2.destroyAllWindows()
 
@@ -150,6 +158,9 @@ class FaceAnalysisApp:
         if self.auto_record and not self.recorder.is_recording:
             h, w = frame.image.shape[:2]
             self.recorder.start(self._source_fps, (w, h))
+
+        if self.web is not None:
+            self.web.update_bgr(frame.image)
 
         fps = fps_meter.tick()
         self.hud.update(

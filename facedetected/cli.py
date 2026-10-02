@@ -53,6 +53,10 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--ids", action="store_true", help="draw numeric landmark ids (debug)")
     run_p.add_argument("--no-hud", action="store_true", help="hide the stats panel")
     run_p.add_argument("--no-analytics", action="store_true", help="disable blink/mouth/pose analytics")
+    run_p.add_argument(
+        "--web", nargs="?", const="127.0.0.1:8000", default=None, metavar="HOST:PORT",
+        help="serve the annotated stream in the browser (default 127.0.0.1:8000 when omitted)",
+    )
     run_p.add_argument("--record", action="store_true", help="start recording immediately")
     run_p.add_argument("--loop", action="store_true", help="loop video files forever")
     run_p.add_argument("--out-dir", default="outputs", help="snapshot/recording directory")
@@ -84,6 +88,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _add_verbosity(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-v", "--verbose", action="count", default=0, help="-v info, -vv debug")
+
+
+def _parse_web(value: str | None) -> tuple[str, int] | None:
+    if value is None:
+        return None
+    host, sep, port = value.rpartition(":")
+    if not sep or not host:
+        raise ValueError(f"--web expects HOST:PORT, got {value!r}")
+    return host, int(port)
 
 
 # -- subcommand handlers ------------------------------------------------------
@@ -122,6 +135,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         max_frames=args.max_frames or None,
         auto_record=args.record,
         enable_analytics=not args.no_analytics,
+        web=_parse_web(args.web),
     )
     summary = app.run()
     print(summary.as_text())
@@ -210,7 +224,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         logger.info("interrupted")
         return 130
-    except (RuntimeError, FileNotFoundError, OSError) as exc:
+    except (RuntimeError, FileNotFoundError, OSError, ValueError) as exc:
         logger.error("%s", exc)
         return 1
 

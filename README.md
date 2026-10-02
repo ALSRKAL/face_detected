@@ -50,6 +50,8 @@ facedetected run                 # camera 0, interactive window
 facedetected run --faces 2 --iris --record
 facedetected run /path/to/video.mp4 --loop
 facedetected run --headless --max-frames 300   # servers / CI: no window
+facedetected run --headless --web              # watch in the browser:
+                                               # http://127.0.0.1:8000
 ```
 
 ### Still images

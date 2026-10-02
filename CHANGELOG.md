@@ -24,6 +24,9 @@ tested, installable Python package.
   translucent HUD panel with smoothed FPS, session summary statistics.
 - **Snapshots** (timestamped, collision-safe) and **MP4 recording** with
   codec negotiation (`mp4v` → `avc1` → `XVID` → `MJPG`).
+- **Web preview** (`--web [HOST:PORT]`): MJPEG streaming of the annotated
+  frames to any browser, loopback-bound by default — ideal for headless
+  servers and Wayland setups without a working highgui window.
 - **CLI**: `facedetected run | image | download-models` plus
   `python -m facedetected`; JSON summaries for image batches; headless mode.
 - **Model manager**: models fetched on demand into a cache dir, pinned by
